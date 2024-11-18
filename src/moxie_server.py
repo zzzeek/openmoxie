@@ -8,6 +8,9 @@ from robot_credentials import RobotCredentials
 from robot_data import RobotData
 from moxie_remote_chat import RemoteChat
 from moxie_messages import CANNED_QUERY_REMOTE_CHAT_CONTEXTS, CANNED_QUERY_CONTEXT_INDEX
+from protos.embodied.logging.Log_pb2 import ProtoSubscribe
+from zmq_stt_handler import STTHandler
+
 
 _IOT_CLIENT_ID_FORMAT = 'projects/{0}/locations/us-central1/registries/devices/devices/{1}'
 _BASIC_FORMAT = '{1}'
@@ -42,6 +45,7 @@ class MoxieServer:
     _mqtt_client_id: str
     _mqtt_project_id: str
     _topic_handlers: dict
+    _zmq_handlers: dict
     def __init__(self, robot, rbdata, endpoint="openmoxie"):
         self._robot = robot
         self._robot_data = rbdata
@@ -58,6 +62,7 @@ class MoxieServer:
         self._topic_handlers = None
         self._connect_handlers = []
         self._remote_chat = RemoteChat(self)
+        self._zmq_handlers = {}
 
     def connect(self, start = False):
         jwt_token = self._robot.create_jwt(self._mqtt_project_id)
@@ -69,6 +74,9 @@ class MoxieServer:
 
     def add_connect_handler(self, callback):
         self._connect_handlers.append(callback)
+
+    def add_zmq_handler(self, protoname, callback):
+        self._zmq_handlers[protoname] = callback
 
     def add_config_handler(self, callback):
         self.add_command_handler("config", callback)
@@ -101,6 +109,7 @@ class MoxieServer:
         else:
             print(f"Rx UNK topic: {dec}")
 
+    # ALL EVENTS FROM-DEVICE ARRIVE HERE
     def on_device_event(self, device_id, eventname, msg):
         print("Rx EVENT topic: " + eventname)
         if eventname == "remote-chat" or eventname == "remote-chat-staging":
@@ -129,17 +138,26 @@ class MoxieServer:
                     req_id = csa.get('request_id')
                     mbh = self._robot_data.get_mbh(device_id)
                     self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'mentor_behaviors': mbh} )
-
+        elif eventname == "zmq":
+            # ZMQ BRIDGE INCOMING
+            colon_index = msg.payload.find(b':')
+            protoname = msg.payload[:colon_index].decode('utf-8')
+            protodata = msg.payload[colon_index + 1:]
+            handler = self._zmq_handler.get(protoname)
+            if handler:
+                handler.handle_zmq(device_id, protoname, protodata)
+            else:
+                print(f'Unhandled RX ProtoBuf {protoname} over ZMQ Bridge')
 
     def on_device_state(self, device_id, msg):
         print("Rx STATE topic: " + msg.payload.decode('utf-8'))
         # We don't have a signal when connecting, so use state to send config - and also to subscribe :(
         self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
-        # TODO: Here we need to send an embodied.logging.ProtoSubscribe message with the protos field including embodied.perception.audio.zmqSTTRequest
-        # sub = PROTOS['embodied.logging.ProtoSubscribe']()
-        # sub.add_protos('embodied.perception.audio.zmqSTTRequest')
-        # sub.set_timestamp(now_ms())
-        # self.send_zmq_to_bot(device_id, sub)
+        # subscripe to ZMQ STT
+        sub = ProtoSubscribe()
+        sub.protos.append('embodied.perception.audio.zmqSTTRequest')
+        sub.timestamp = now_ms()
+        self.send_zmq_to_bot(device_id, sub)
 
     def send_config_to_bot_json(self, device_id, payload: dict):
         self._client.publish(f"/devices/{device_id}/config", payload=json.dumps(payload))
@@ -178,6 +196,7 @@ c = MoxieServer(creds, rbdata)
 #c.add_connect_handler(on_connect)
 #c.add_config_handler(on_config)
 #c.add_command_handler("remote_chat", on_chat_response)
+c.add_zmq_handler('embodied.perception.audio.zmqSTTRequest', STTHandler(c))
 c.connect(start=True)
 
 while True:
