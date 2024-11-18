@@ -31,6 +31,9 @@ IOT_ENDPOINTS = {
     'openmoxie': Endpoint('openmoxie', 'duranaki.com', 8883)
 }
 
+def now_ms():
+    return time.time_ns() // 1_000_000
+
 class MoxieServer:
 
     _robot : any
@@ -130,8 +133,13 @@ class MoxieServer:
 
     def on_device_state(self, device_id, msg):
         print("Rx STATE topic: " + msg.payload.decode('utf-8'))
-        # We don't have a signal when connecting, so use state to send config
+        # We don't have a signal when connecting, so use state to send config - and also to subscribe :(
         self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
+        # TODO: Here we need to send an embodied.logging.ProtoSubscribe message with the protos field including embodied.perception.audio.zmqSTTRequest
+        # sub = PROTOS['embodied.logging.ProtoSubscribe']()
+        # sub.add_protos('embodied.perception.audio.zmqSTTRequest')
+        # sub.set_timestamp(now_ms())
+        # self.send_zmq_to_bot(device_id, sub)
 
     def send_config_to_bot_json(self, device_id, payload: dict):
         self._client.publish(f"/devices/{device_id}/config", payload=json.dumps(payload))
@@ -139,14 +147,14 @@ class MoxieServer:
     def send_command_to_bot_json(self, device_id, command, payload: dict):
         self._client.publish(f"/devices/{device_id}/commands/{command}", payload=json.dumps(payload))
 
+    def send_zmq_to_bot(self, device_id, msgobject):
+        payload = (msgobject.DESCRIPTOR.full_name + ":").encode('utf-8') + msgobject.SerializeToString()
+        self._client.publish(f"/devices/{device_id}/commands/zmq", payload=payload)
+
     def long_topic(self, topic_name):
         return "/devices/" + self._robot.device_id + "/events/" + topic_name
 
     def publish_as_json(self, topic, payload: dict):
-        self._client.publish(self.long_topic(topic), payload=json.dumps(payload))
-
-    def publish_subtopic_as_json(self, payload: dict):
-        dict["topic"] = "client-service-activity-log"
         self._client.publish(self.long_topic(topic), payload=json.dumps(payload))
 
     def publish_canned(self, canned_data):
