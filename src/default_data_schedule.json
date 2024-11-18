@@ -1,0 +1,11 @@
+{
+    "provided_schedule": [
+        {
+        "module_id": "AB"
+        },
+        {
+        "module_id": "OPEMMOXIE_CHAT",
+        "content_id": "default"
+        }
+    ]
+}

@@ -1,0 +1,5 @@
+{
+  "props": {
+      "gcp_log_disable":"1"
+  }
+}
