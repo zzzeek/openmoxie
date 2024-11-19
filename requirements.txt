@@ -2,3 +2,5 @@ paho-mqtt
 jwt
 requests
 protobuf==4.25.3
+numpy==1.26.4
+soundfile==0.12.1

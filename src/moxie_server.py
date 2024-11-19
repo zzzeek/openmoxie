@@ -143,7 +143,7 @@ class MoxieServer:
             colon_index = msg.payload.find(b':')
             protoname = msg.payload[:colon_index].decode('utf-8')
             protodata = msg.payload[colon_index + 1:]
-            handler = self._zmq_handler.get(protoname)
+            handler = self._zmq_handlers.get(protoname)
             if handler:
                 handler.handle_zmq(device_id, protoname, protodata)
             else:
