@@ -11,7 +11,7 @@ class RemoteChat:
             if cmd == 'notify':
                 pass
             elif cmd == "prompt":
-                resp = { 'command': 'remote_chat', 'result': 0, 'event_id': rcr['event_id'], 'output': { 'markup': 'Hi there'} }
+                resp = { 'command': 'remote_chat', 'result': 0, 'event_id': rcr['event_id'], 'output': { 'markup': 'Hi there!  Welcome to Open Moxie!'} }
                 self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
             else:
                 resp = { 'command': 'remote_chat', 'result': 0, 'event_id': rcr['event_id'], 'output': { 'markup': 'Chat chat chat'} }

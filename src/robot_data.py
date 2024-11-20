@@ -1,6 +1,10 @@
 import json
 
-DEFAULT_ROBOT_CONFIG = { "paired_status": "paired" }
+DEFAULT_ROBOT_CONFIG = { 
+  "paired_status": "paired",
+  "audio_volume": "0.6",
+  "screen_brightness": "1.0"
+}
 DEFAULT_MODULES = {}
 DEFAULT_MBH = []
 DEFAULT_SCHEDULE = {}
