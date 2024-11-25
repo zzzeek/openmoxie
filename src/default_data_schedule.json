@@ -1,11 +1,20 @@
 {
     "provided_schedule": [
         {
+        "module_id": "OPENMOXIE_CHAT",
+        "content_id": "default"
+        },
+        {
         "module_id": "AB"
         },
         {
-        "module_id": "OPEMMOXIE_CHAT",
+        "module_id": "OPENMOXIE_CHAT",
         "content_id": "default"
         }
-    ]
+    ],
+    "chat_request":
+    {
+      "module_id": "OPENMOXIE_CHAT",
+      "content_id": "default"
+    }
 }

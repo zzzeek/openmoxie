@@ -2,7 +2,7 @@
     "modules": [
         {
             "info": {
-                "id": "OPEMMOXIE_CHAT",
+                "id": "OPENMOXIE_CHAT",
                 "name": "Chat with moxie lite.",
                 "detail": "Chat Module for Moxie",
                 "app_title": "Open Moxie Chat",

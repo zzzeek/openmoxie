@@ -1,21 +1,28 @@
 from openai import OpenAI
+import copy
+import concurrent.futures
 
 class ChatSession:
     def __init__(self, max_turns=20):
         self._history = []
         self._max_turns = max_turns
 
-    def add_history(self, role, message):
-        if self._history and self._history[-1].get("role") == role:
+    def add_history(self, role, message, history=None):
+        history = self._history if not history else history
+        if history and history[-1].get("role") == role:
             # same role, append text
-            self._history[-1]["content"] =  self._history[-1].get("content", '') + ' ' + message
+            history[-1]["content"] =  history[-1].get("content", '') + ' ' + message
         else:
-            self._history.append({ "role": role, "content": message })
-            if len(self._history) > self._max_turns:
-                self._history = self._history[-self._max_turns:]
+            history.append({ "role": role, "content": message })
+            if len(history) > self._max_turns:
+                history = history[-self._max_turns:]
 
     def reset(self):
         self._history = []
+        
+    def get_prompt(self, msg='Welcome to open chat'):
+        self.reset()
+        return msg
 
     def ingest_notify(self, rcr):
         print(f"Notify session")
@@ -39,16 +46,21 @@ class SingleContextChatSession(ChatSession):
         self._context = [ { "role": "system", 
             "content": "You are a having a conversation with your friend. Make it interesting and keep the conversation moving forward. Your utterances are around 30-40 words long. Ask only one question per response and ask it at the end of your response."
             } ]
+
     def next_response(self, speech):
-        print(f'Open AI Inference using history:\n{self._history}')
-        thisinput = [ { "role": "user", "content": speech } ]
+        # clone, add new input, official history comes from notify
+        history = copy.deepcopy(self._history)
+        self.add_history('user', speech, history)
         client = OpenAI()
         return client.chat.completions.create(
                     model="gpt-3.5-turbo",
-                    messages=self._context + self._history + thisinput,
+                    messages=self._context + history,
                     max_tokens=70,
                     temperature=0.5
                 ).choices[0].message.content
+
+    def get_prompt(self):
+        return super().get_prompt(msg='Hi there!  Welcome to Open Moxie chat!')
 
 
 class RemoteChat:
@@ -57,6 +69,7 @@ class RemoteChat:
         self._device_sessions = {}
         self._modules = { }
         self.register_module('OPENMOXIE_CHAT', 'default', SingleContextChatSession)
+        self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
 
     def register_module(self, module_id, content_id, cname):
         self._modules[f'{module_id}/{content_id}'] = cname
@@ -72,7 +85,31 @@ class RemoteChat:
         self._device_sessions[device_id] = new_session
         return new_session['session']
 
+    def make_response(self, rcr, res=0):
+        resp = { 
+            'command': 'remote_chat',
+            'result': res,
+            'backend': rcr['backend'],
+            'event_id': rcr['event_id'],
+            'output': { },
+            'response_actions': [
+                {
+                    'output_type': 'GLOBAL_RESPONSE'
+                }
+            ],
+            'fallback': False,
+            'response_action': {
+                'output_type': 'GLOBAL_RESPONSE'
+            }
+        }
+        if 'speech' in rcr:
+            resp['input_speech'] = rcr['speech']
+        return resp
                 
+    def next_session_response(self, device_id, sess, speech, resp):
+        resp['output']['markup'] = sess.next_response(speech)
+        self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
+        
     def handle_request(self, device_id, rcr):
         id = rcr.get('module_id', '') + '/' + rcr.get('content_id', '')
         maker = self._modules.get(id)
@@ -83,12 +120,11 @@ class RemoteChat:
             if cmd == 'notify':
                 sess.ingest_notify(rcr)
             elif cmd == "prompt":
-                sess.reset()
-                resp = { 'command': 'remote_chat', 'result': 0, 'event_id': rcr['event_id'], 'output': { 'markup': 'Hi there!  Welcome to Open Moxie!'} }
+                resp = self.make_response(rcr)
+                resp['output']['markup'] = sess.get_prompt()
                 self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
             else:
-                resp = { 'command': 'remote_chat', 'result': 0, 'event_id': rcr['event_id'], 'output': { 'markup': sess.next_response(rcr["speech"])} }
-                self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
+                self._worker_queue.submit(self.next_session_response, device_id, sess, rcr["speech"], self.make_response(rcr))
         elif device_id in self._device_sessions:
             del self._device_sessions[device_id]
             print(f'Ignoring request for other module: {rcr.get("module_id")} (Cleared session)')

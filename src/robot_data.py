@@ -3,7 +3,8 @@ import json
 DEFAULT_ROBOT_CONFIG = { 
   "paired_status": "paired",
   "audio_volume": "0.6",
-  "screen_brightness": "1.0"
+  "screen_brightness": "1.0",
+  "audio_wake_set": "off"
 }
 DEFAULT_MODULES = {}
 DEFAULT_MBH = []
