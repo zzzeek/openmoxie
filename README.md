@@ -17,6 +17,7 @@ Currently this project contains the following:
 ## Dependencies
 
 * This project needs an external MQTT broker.  This is currently based on mosquitto MQTT service.
+* STT and chat inferences are serviced through OpenAI.  You must export a valid OPENAI_API_KEY into your environment before running
 
 # Running your own instance
 
