@@ -63,4 +63,46 @@ python3 manage.py runserver --noreload
 
 Once it is running, you may visit http://localhost:8000/hive for the dashboard.
 
+# MQTT Broker
 
+I have been running this all from a headless Ubuntu system using mosquitto MQTT as a broker and configured it for anonymous
+access, which is generally a bad idea when the services are running with payment attached.  But I wanted to share my setup
+in case anyone wanted to replicate it as a starting point on their own system.
+
+```
+sudo apt-get install mosquitto
+```
+
+My site configuration for mosquitto in `/etc/mosquitto/conf.d/openmoxie.conf`
+```
+listener 8883
+cafile /etc/letsencrypt/live/duranaki.com/chain.pem
+keyfile /etc/letsencrypt/live/duranaki.com/privkey.pem
+certfile /etc/letsencrypt/live/duranaki.com/cert.pem
+allow_anonymous true
+```
+
+I'm using Let's Encrypt with my apache instance, and have allowed ACL permission for mosquitto to read them for it's SSL connections and
+will be using a virtual host proxy to route openmoxie subdomain to the django port, so all external webtraffic is nicely encrypted.  The
+config for reference.
+
+```
+<IfModule mod_ssl.c>
+<VirtualHost *:443>
+        ServerAdmin webmaster@localhost
+        ServerName openmoxie.duranaki.com
+
+        ErrorLog ${APACHE_LOG_DIR}/openmoxie_error.log
+        CustomLog ${APACHE_LOG_DIR}/openmoxie_access.log combined
+        SSLEngine on
+        ProxyRequests Off
+        ProxyPreserveHost On
+        ProxyPass / http://localhost:8000/
+        ProxyPassReverse / http://localhost:8000/
+
+Include /etc/letsencrypt/options-ssl-apache.conf
+SSLCertificateFile /etc/letsencrypt/live/duranaki.com/fullchain.pem
+SSLCertificateKeyFile /etc/letsencrypt/live/duranaki.com/privkey.pem
+</VirtualHost>
+</IfModule>
+```
