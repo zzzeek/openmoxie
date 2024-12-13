@@ -7,9 +7,12 @@ class ChatSession:
     def __init__(self, max_history=20):
         self._history = []
         self._max_history = max_history
+        self._total_volleys = 0
 
     def add_history(self, role, message, history=None):
-        history = self._history if not history else history
+        if not history:
+            history = self._history
+            self._total_volleys += 1
         if history and history[-1].get("role") == role:
             # same role, append text
             history[-1]["content"] =  history[-1].get("content", '') + ' ' + message
@@ -21,6 +24,7 @@ class ChatSession:
     def reset(self):
         self._history = []
         
+
     def get_prompt(self, msg='Welcome to open chat'):
         self.reset()
         return msg
@@ -38,7 +42,7 @@ class ChatSession:
 
     def next_response(self, speech):
         print(f'Inference using history:\n{self._history}')
-        return f"chat history {len(self._history)}"
+        return f"chat history {len(self._history)}", None
 
 
 class SingleContextChatSession(ChatSession):
@@ -49,7 +53,8 @@ class SingleContextChatSession(ChatSession):
                  opener="Hi there!  Welcome to Open Moxie chat!",
                  model="gpt-3.5-turbo",
                  max_tokens=70,
-                 temperature=0.5
+                 temperature=0.5,
+                 exit_line="Well, that was fun.  Let's move on."
                  ):
         super().__init__(max_history)
         self._max_volleys = max_volleys        
@@ -60,12 +65,17 @@ class SingleContextChatSession(ChatSession):
         self._model = model
         self._max_tokens = max_tokens
         self._temperature = temperature
+        self._exit_line = exit_line
         self._auto_history = False
 
     def set_auto_history(self, val):
         self._auto_history = val
-        
+    
+    def overflow(self):
+        return self._total_volleys >= self._max_volleys
+    
     def next_response(self, speech):
+        of = self.overflow()
         if self._auto_history:
             # accumulating automatically, no interruptions or aborts
             self.add_history('user', speech)
@@ -81,10 +91,12 @@ class SingleContextChatSession(ChatSession):
                     max_tokens=self._max_tokens,
                     temperature=self._temperature
                 ).choices[0].message.content
+        if of:
+            resp += " " + self._exit_line
         if self._auto_history:
             self.add_history('assistant', resp)
-        return resp
-    
+        return resp, of
+        
     def get_prompt(self):
         resp = super().get_prompt(msg=self._opener)
         if self._auto_history:
@@ -166,12 +178,19 @@ class RemoteChat:
                 'output_type': 'GLOBAL_RESPONSE'
             }
         }
+
         if 'speech' in rcr:
             resp['input_speech'] = rcr['speech']
         return resp
                 
-    def next_session_response(self, device_id, sess, speech, resp):
-        resp['output']['markup'] = sess.next_response(speech)
+    def next_session_response(self, device_id, sess, rcr, resp):
+        speech = rcr["speech"]
+        text,overflow = sess.next_response(speech)
+        resp['output']['markup'] = text
+        if overflow:
+            action = { 'action': 'exit_module', 'output_type': 'GLOBAL_RESPONSE' }
+            resp['response_actions'][0] = action
+            resp['response_action'] = action
         self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
         
     def handle_request(self, device_id, rcr):
@@ -188,7 +207,7 @@ class RemoteChat:
                 resp['output']['markup'] = sess.get_prompt()
                 self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
             else:
-                self._worker_queue.submit(self.next_session_response, device_id, sess, rcr["speech"], self.make_response(rcr))
+                self._worker_queue.submit(self.next_session_response, device_id, sess, rcr, self.make_response(rcr))
         elif device_id in self._device_sessions:
             del self._device_sessions[device_id]
             print(f'Ignoring request for other module: {rcr.get("module_id")} (Cleared session)')

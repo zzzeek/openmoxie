@@ -41,9 +41,11 @@ def interact_update(request):
     module_id = request.POST['module_id']
     content_id = request.POST['content_id']
     session = get_instance().get_web_session_for_module(token, module_id, content_id)
-    line = session.get_prompt() if not speech else session.next_response(speech)    
-    
-    return JsonResponse({'message': line})
+    if not speech:
+        line,overflow = session.get_prompt(),False
+    else:
+        line,overflow = session.next_response(speech)
+    return JsonResponse({'message': line, 'overflow': overflow})
 
 def reload_database(request):
     get_instance().remote_chat().update_from_database()

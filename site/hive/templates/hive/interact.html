@@ -48,7 +48,11 @@
           // Handle successful response
           $('#user_input').val('');
           // Add the new line
-          add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'Moxie', response["message"])
+          var oflabel = ""
+          if (response["overflow"]) {
+            oflabel = " (EXIT)"
+          }
+          add_to_history('list-group-item list-group-item-primary chat-line', 'bg-primary', 'Moxie', response["message"] + oflabel)
         },
         error: function(xhr, status, error) {
           console.log(xhr.responseText);
