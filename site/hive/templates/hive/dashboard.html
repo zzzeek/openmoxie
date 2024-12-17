@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <h2>Devices</h2>
-<a href="{% url 'hive:endpoint_qr' %}">[Migration QR Code]</a>
+<a class="btn btn-primary btn-sm" role="button" href="{% url 'hive:endpoint_qr' %}">Migration QR Code</a>
 <table class="table table-striped">
   <tr><th>Moxie Devices</th><th>Permission</th><th>Schedule</th></tr>
   {% for device in recent_devices %}
@@ -17,7 +17,7 @@
   {% endfor %}
 </table>
 <br>
-<h2>Conversations</h2><a href="{% url 'hive:reload_database' %}">[Reload from DB]</a>
+<h2>Conversations</h2><a class="btn btn-primary btn-sm" role="button" href="{% url 'hive:reload_database' %}">Refresh from DB</a>
 <table class="table table-striped">
   <tr><th>Module ID</th><th>Content ID</th><th></th></tr>
   {% for s in conversations %}
