@@ -16,6 +16,7 @@ from django.conf import settings
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_STORE_DIR = BASE_DIR / 'work'
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -91,7 +92,7 @@ WSGI_APPLICATION = 'openmoxie.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DATA_STORE_DIR / 'db.sqlite3',
     }
 }
 
@@ -172,7 +173,7 @@ LOGGING = {
         },
         'file': {
             'class': 'logging.FileHandler',
-            'filename': 'debug.log',
+            'filename': DATA_STORE_DIR / 'debug.log',
             'formatter': 'verbose'
         },
     },

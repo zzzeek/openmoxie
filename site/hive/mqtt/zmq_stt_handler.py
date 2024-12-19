@@ -4,11 +4,14 @@ import soundfile as sf
 import numpy as np
 import io
 import time
+import logging
 import concurrent.futures
 from openai import OpenAI
 
 LOG_WAV=False
 OPENAI_MODEL='whisper-1'
+
+logger = logging.getLogger(__name__)
 
 def now_ms():
     return time.time_ns() // 1_000_000
@@ -20,13 +23,16 @@ class STTSession:
         self._session_id = session_id
         self._stream_bytes = bytearray()
         self._start_ts = None
+
     def on_request(self, req):
         # future ref, this is technically wrong in the design, this ts is realtime on robot, not audio timestamp
         if not self._start_ts:
             self._start_ts = req.timestamp
         self._stream_bytes += req.audio_content
+        return len(self._stream_bytes)
+    
     def perform(self):
-        print(f'Processing session_id {self._session_id} with {len(self._stream_bytes)} bytes')
+        logger.info(f'Processing session_id {self._session_id} with {len(self._stream_bytes)} bytes')
         buffer = io.BytesIO()
         sf.write(
             buffer,  # File-like object (None for bytes)
@@ -54,9 +60,9 @@ class STTSession:
             max_end = max(d.end for d in transcript.words)
             resp.start_timestamp = self._start_ts + int(min_start*1000)
             resp.end_timestamp = self._start_ts + int(max_end*1000)
-            print(f'STT-FINAL: {transcript.text}')
+            logger.info(f'STT-FINAL: {transcript.text}')
         except Exception as e:
-            print(f'Exception handling openAI request: {e}')
+            logger.warning(f'Exception handling openAI request: {e}')
             resp.error_code = 66
             resp.error_message = str(e)
 
@@ -82,11 +88,11 @@ class STTHandler(ZMQHandler):
         sesskey = ( device_id, req.uuid )
         if sesskey not in self._sessions:
             self._sessions[sesskey] = STTSession(self, sesskey[0], sesskey[1])
-        self._sessions[sesskey].on_request(req)
+        total_sess_bytes = self._sessions[sesskey].on_request(req)
         # every time we reach EOS, we background it for work
-        print(f'VAD State {req.vad}')
+        logger.debug(f'ZMQ Speech VAD: {req.vad} TotalBytes: {total_sess_bytes}')
         if req.vad == req.VADState.END_OF_SPEECH:
-            print(f'Session reached END OF SPEECH')
+            logger.info(f'Session reached END OF SPEECH')
             # session is done, do the work
             sess = self._sessions.pop(sesskey)
             self._worker_queue.submit(sess.perform)

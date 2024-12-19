@@ -9,6 +9,8 @@
       "max_enroll": "0",
       "audio_wake": "1",
       "audio_wake_set": "off",
-      "cloud_schedule_reset_threshold": "5"
+      "cloud_schedule_reset_threshold": "5",
+      "debug_whiteboard": "1",
+      "brain_entrances_available": "1"
     }
 }

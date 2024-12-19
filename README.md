@@ -28,23 +28,19 @@ python3 -m pip install -r requirements.txt
 ```
 3. Make initial migrations
 ```
-cd site
-python3 manage.py makemigrations
+python3 site/manage.py makemigrations
 ```
 4. Run initial migration
 ```
-cd site
-python3 manage.py migrate
+python3 site/manage.py migrate
 ```
 5. Create a superuser 
 ```
-cd site
-python manage.py createsuperuser
+python site/manage.py createsuperuser
 ```
 6. Run the initial data import
 ```
-cd site
-python3 manage.py init_data
+python3 site/manage.py init_data
 ```
 7. Edit `site\openmoxie\settings.py` and edit this block with your own MQTT host
 ```

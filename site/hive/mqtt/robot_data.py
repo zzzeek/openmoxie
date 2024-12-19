@@ -1,7 +1,10 @@
 import json
+import logging
 from django.db import connections
 from django.db import transaction
 from ..models import MoxieDevice, MoxieSchedule
+
+logger = logging.getLogger(__name__)
 
 def run_db_atomic(functor, *args, **kwargs):
     with connections['default'].cursor() as cursor:
@@ -31,35 +34,42 @@ class RobotData:
 
     def db_connect(self, robot_id):
         if robot_id in self._robot_map:
-            print(f'Device {robot_id} already known.')
+            logger.info(f'Device {robot_id} already known.')
         else:
-            print(f'Device {robot_id} is NEW.')
+            logger.info(f'Device {robot_id} is NEW.')
             #self.init_from_db(robot_id)
             run_db_atomic(self.init_from_db, robot_id)
 
     def db_release(self, robot_id):
         if robot_id in self._robot_map:
-            print(f'Releasing device data for {robot_id}')
+            logger.info(f'Releasing device data for {robot_id}')
             del self._robot_map[robot_id]
 
+    def is_connected(self, robot_id):
+        return robot_id in self._robot_map
+    
     def init_from_db(self, robot_id):
         device, created = MoxieDevice.objects.get_or_create(device_id=robot_id)
         if created:
-            print(f'Created new model for this device {robot_id}')
+            logger.info(f'Created new model for this device {robot_id}')
             schedule = MoxieSchedule.objects.get(name='default')
             if schedule:
-                print(f'Setting schedule to {schedule}')
+                logger.info(f'Setting schedule to {schedule}')
                 device.schedule = schedule
                 device.save()
                 self._robot_map[robot_id] = { "schedule": schedule.schedule }
+            else:
+                logger.warning('Failed to locate default schedule.')
         else:
-            print(f'Existing model for this device {robot_id}')
+            logger.info(f'Existing model for this device {robot_id}')
             self._robot_map[robot_id] = { "schedule": device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE }
         pass        
 
     def get_config(self, robot_id):
         robot_rec = self._robot_map.get(robot_id, {})
-        return robot_rec.get("config", DEFAULT_ROBOT_CONFIG)
+        cfg = robot_rec.get("config", DEFAULT_ROBOT_CONFIG)
+        logger.info(f'Providing config {cfg} to {robot_id}')
+        return cfg
 
     def get_mbh(self, robot_id):
         robot_rec = self._robot_map.get(robot_id, {})
@@ -67,7 +77,9 @@ class RobotData:
 
     def get_schedule(self, robot_id):
         robot_rec = self._robot_map.get(robot_id, {})
-        return robot_rec.get("schedule", DEFAULT_SCHEDULE)
+        s = robot_rec.get("schedule", DEFAULT_SCHEDULE)
+        logger.info(f'Providing schedule {s} to {robot_id}')
+        return s
 
 
 if __name__ == "__main__":

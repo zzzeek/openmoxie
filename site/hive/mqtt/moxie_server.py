@@ -58,7 +58,7 @@ class MoxieServer:
         self._zmq_handlers = {}
         self._client_metrics = {}
         self._connect_pattern = r"connected from (.*) as (d_[a-f0-9-]+)"
-        self._disconnect_pattern = r"Client (d_[a-f0-9-]+) closed its connection"
+        self._disconnect_pattern = r"Client (d_[a-f0-9-]+) (closed its connection|disconnected)"
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
 
     def connect(self, start = False):
@@ -122,13 +122,16 @@ class MoxieServer:
                 self._worker_queue.submit(self.on_device_connect, match.group(2), True, match.group(1))
             elif match2:
                 self._worker_queue.submit(self.on_device_connect, match2.group(1), False)
+            # else:
+            #     logger.info(f'LOGMSG->{line}')
 
     def on_client_metrics(self, basetype, msg):
         self._client_metrics[basetype] = int(msg.payload.decode('utf-8'))
 
     # ALL EVENTS FROM-DEVICE ARRIVE HERE
     def on_device_event(self, device_id, eventname, msg):
-        logger.debug(f"Rx EVENT topic: {eventname}")
+        #logger.debug(f"Rx EVENT topic: {eventname}")
+        self.check_device_connect(device_id, "Event")
         if eventname == "remote-chat" or eventname == "remote-chat-staging":
             rcr = json.loads(msg.payload)
             if rcr.get('backend') == "data" and rcr.get('query',{}).get('query') == "modules":
@@ -164,30 +167,47 @@ class MoxieServer:
             handler = self._zmq_handlers.get(protoname)
             if handler:
                 handler.handle_zmq(device_id, protoname, protodata)
-            else:
-                logger.debug(f'Unhandled RX ProtoBuf {protoname} over ZMQ Bridge')
+            # else:
+            #     logger.debug(f'Unhandled RX ProtoBuf {protoname} over ZMQ Bridge')
         elif eventname == "device-logs":
             # These are per-client log messages
             logrec = json.loads(msg.payload)
             logger.debug(f'{device_id}[{logrec["tag"]}] - {logrec["message"]}')
+            # if 'Work cycle' in logrec["message"]:
+            #     logger.info("DEBUG - SUB ZMQ TO BOT")
+            #     sub = ProtoSubscribe()
+            #     sub.protos.append('embodied.perception.audio.zmqSTTRequest')
+            #     sub.timestamp = now_ms()
+            #     logger.info(f'Subscribed to ZMQ STT')
+            #     self.send_zmq_to_bot(device_id, sub)
 
     # NOTE: Called from worker thread pool
     def on_device_connect(self, device_id, connected, ip_addr=None):
         if connected:
             logger.info(f'NEW CLIENT {device_id} from {ip_addr}')
+            # Sleep to avoid sending sub before client is ready
+            time.sleep(1.0)
             self._robot_data.db_connect(device_id)
             self.send_config_to_bot_json(device_id, self._robot_data.get_config(device_id))
             # subscripe to ZMQ STT
             sub = ProtoSubscribe()
             sub.protos.append('embodied.perception.audio.zmqSTTRequest')
             sub.timestamp = now_ms()
+            logger.info(f'Subscribed to ZMQ STT')
             self.send_zmq_to_bot(device_id, sub)
         else:
             self._robot_data.db_release(device_id)
             logger.info(f'LOST CLIENT {device_id}')
 
+    # Fallback, we missed the connect message but robot is connected
+    def check_device_connect(self, device_id, info="Missing"):
+        if not self._robot_data.is_connected(device_id):
+            logger.info(f"Unconnected robot {device_id} location {info}.  Connecting now.")
+            self._worker_queue.submit(self.on_device_connect, device_id, True, "State")
+
     def on_device_state(self, device_id, msg):
         logger.debug("Rx STATE topic: " + msg.payload.decode('utf-8'))
+        self.check_device_connect(device_id, "State")
 
     def send_config_to_bot_json(self, device_id, payload: dict):
         self._client.publish(f"/devices/{device_id}/config", payload=json.dumps(payload))
