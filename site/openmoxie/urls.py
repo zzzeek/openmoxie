@@ -25,5 +25,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ] + debug_toolbar_urls()
 
-if settings.DEBUG:
+# for now, we only serve our own static content
+if True or settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

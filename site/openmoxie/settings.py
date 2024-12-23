@@ -25,9 +25,9 @@ DATA_STORE_DIR = BASE_DIR / 'work'
 SECRET_KEY = 'django-insecure-v&n3hpdmu^t0r^62+hj64&c$z8q3o2g9qby^x02jl8y8g@jmb@'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [ '*' ]
 
 
 # Application definition
@@ -79,7 +79,7 @@ TEMPLATES = [
 
 INTERNAL_IPS = [
     # ...
-    "127.0.0.1",
+    "0.0.0.0",
     # ...
 ]
 

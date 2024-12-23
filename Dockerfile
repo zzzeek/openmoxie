@@ -21,7 +21,7 @@ RUN pip install -r requirements.txt
 VOLUME /app/site/work
 
 # Expose the Mosquitto MQTT port and Django development server port
-EXPOSE 8001
+EXPOSE 8000
 
 ENV DJANGO_SUPERUSER_USERNAME=admin
 ENV DJANGO_SUPERUSER_PASSWORD=moxie4ever
@@ -29,4 +29,4 @@ ENV DJANGO_SUPERUSER_EMAIL=admin@example.com
 
 # Run Django development server
 # - Does data migrations and ensure stock data available, then runs the service
-CMD ["bash", "-c", "python3 site/manage.py makemigrations && python3 site/manage.py migrate && python3 site/manage.py init_data && python3 site/manage.py runserver --noreload"]
+CMD ["bash", "-c", "python3 site/manage.py makemigrations && python3 site/manage.py migrate && python3 site/manage.py init_data && python3 site/manage.py runserver --noreload 0.0.0.0:8000"]
