@@ -21,7 +21,7 @@ class Command(BaseCommand):
 
         def_chat, created = SinglePromptChat.objects.get_or_create(module_id='OPENMOXIE_CHAT', content_id='default')
         if created:
-            def_chat.prompt="You are a having a conversation with your friend. Make it interesting and keep the conversation moving forward. Your utterances are around 30-40 words long. Ask only one question per response and ask it at the end of your response."
+            def_chat.prompt="You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks."
             def_chat.opener="Hi there!  Welcome to Open Moxie chat!"
             def_chat.save()
             print("Creating default OPENMOXIE_CHAT")

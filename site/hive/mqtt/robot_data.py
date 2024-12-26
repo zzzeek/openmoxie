@@ -37,11 +37,12 @@ class RobotData:
 
     def db_connect(self, robot_id):
         if robot_id in self._robot_map:
-            logger.info(f'Device {robot_id} already known.')
-        else:
-            logger.info(f'Device {robot_id} is NEW.')
-            #self.init_from_db(robot_id)
-            run_db_atomic(self.init_from_db, robot_id)
+            # Known only when cache record isnt empty
+            if self._robot_map[robot_id]:
+                logger.info(f'Device {robot_id} already known.')
+                return
+        logger.info(f'Device {robot_id} is LOADING.')
+        run_db_atomic(self.init_from_db, robot_id)
 
     def db_release(self, robot_id):
         if robot_id in self._robot_map:

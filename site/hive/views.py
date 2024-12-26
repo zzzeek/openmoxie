@@ -45,13 +45,13 @@ def hive_configure(request):
     # Create Admin User if data exists and we dont have one
     User = get_user_model()
     if not User.objects.filter(is_superuser=True).exists():
-        admin = request.POST.get("admin")
+        admin = request.POST.get("adminUser")
         adminPassword = request.POST.get("adminPassword")
         if admin and adminPassword:
             User.objects.create_superuser(admin, None, adminPassword)
             logger.info(f"Created superuser '{admin}'")
         else:
-            logger.warn(f"Couldn't create missing superuser")
+            logger.warning(f"Couldn't create missing superuser")
 
     logger.info("Updated default Hive Configuration")
     # reload any cached db objects
