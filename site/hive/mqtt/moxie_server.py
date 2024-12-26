@@ -6,7 +6,9 @@ import re
 import logging
 import base64
 import ssl
+import openai
 from datetime import datetime, timedelta, timezone
+from .ai_factory import set_openai_key
 from .robot_credentials import RobotCredentials
 from .robot_data import RobotData
 from .moxie_remote_chat import RemoteChat
@@ -15,15 +17,17 @@ from .protos.embodied.logging.Log_pb2 import ProtoSubscribe
 from .protos.embodied.logging.Cloud2_pb2 import ServiceConfiguration2
 from .protos.embodied.wifiapp.QRCommands_pb2 import QRCommand
 from .zmq_stt_handler import STTHandler
-
+from ..models import HiveConfiguration
 
 _BASIC_FORMAT = '{1}'
 _MOXIE_SERVICE_INSTANCE = None
+_OPENAI_APIKEY=None
 
 def now_ms():
     return time.time_ns() // 1_000_000
 
 logger = logging.getLogger(__name__)
+
 
 class MoxieServer:
     _robot : any
@@ -60,6 +64,7 @@ class MoxieServer:
         self._connect_pattern = r"connected from (.*) as (d_[a-f0-9-]+)"
         self._disconnect_pattern = r"Client (d_[a-f0-9-]+) (closed its connection|disconnected)"
         self._worker_queue = concurrent.futures.ThreadPoolExecutor(max_workers=5)
+        self.update_from_database()
 
     def connect(self, start = False):
         jwt_token = self._robot.create_jwt(self._mqtt_project_id)
@@ -109,11 +114,11 @@ class MoxieServer:
         elif fromdevice == "clients":
             self.on_client_metrics(basetype, msg)
         elif fromdevice == "log":
-            self.on_log_message(basetype, msg)
+            self.on_sys_log_message(basetype, msg)
         else:
             logger.debug(f"Rx UNK topic: {dec}")
 
-    def on_log_message(self, basetype, msg):
+    def on_sys_log_message(self, basetype, msg):
         if basetype == "N": # Notifications
             line = msg.payload.decode('utf-8')
             match = re.search(self._connect_pattern, line)
@@ -146,6 +151,7 @@ class MoxieServer:
                 # REMOTE CHAT CONVERSATION ENDPOINT
                 self._remote_chat.handle_request(device_id, rcr)
         elif eventname == "client-service-activity-log":
+            # Topic originally for reporting activities, but extended with subtopics
             csa = json.loads(msg.payload)
             if csa.get("subtopic") == "query":
                 if csa.get("query") == "schedule":
@@ -155,11 +161,14 @@ class MoxieServer:
                     schedule = self._robot_data.get_schedule(device_id)
                     self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'schedule': schedule} )
                 elif csa.get("query") == "mentor_behaviors":
-                    # MENTOR BEHAVIOR REQUEST
+                    # MENTOR BEHAVIOR REQUEST - Robot asking what user has done before
                     logger.debug("Rx MBH request.")
                     req_id = csa.get('request_id')
-                    mbh = self._robot_data.get_mbh(device_id)
-                    self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'mentor_behaviors': mbh} )
+                    self._worker_queue.submit(self.provide_mentor_behaviors, req_id, device_id)
+            elif 'mentor_behavior' in csa:
+                # MENTOR BEHAVIOR REPORT - Robot informing what user has done
+                self._worker_queue.submit(self.ingest_mentor_behavior, device_id, csa['mentor_behavior'])
+
         elif eventname == "zmq":
             # ZMQ BRIDGE INCOMING
             colon_index = msg.payload.find(b':')
@@ -174,6 +183,16 @@ class MoxieServer:
             # These are per-client log messages
             logrec = json.loads(msg.payload)
             logger.debug(f'{device_id}[{logrec["tag"]}] - {logrec["message"]}')
+
+    # NOTE: Called from worker thread pool
+    def ingest_mentor_behavior(self, device_id, mbh):
+        self._robot_data.add_mbh(device_id, mbh)
+
+    # NOTE: Called from worker thread pool
+    def provide_mentor_behaviors(self, req_id, device_id):
+        mbh = self._robot_data.get_mbh(device_id)
+        logger.info(f'Providing {len(mbh)} MBH records to {device_id}')
+        self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'mentor_behaviors': mbh} )
 
     # NOTE: Called from worker thread pool
     def on_device_connect(self, device_id, connected, ip_addr=None):
@@ -243,13 +262,20 @@ class MoxieServer:
     
     def remote_chat(self):
         return self._remote_chat
-    
-    def get_endpoint_qr_base64(self):
+
+    def robot_data(self):
+        return self._robot_data
+
+    def update_from_database(self):
+        hive_config = HiveConfiguration.objects.filter(name="default").first()
+        set_openai_key(hive_config.openai_api_key if hive_config else None)
+        self._remote_chat.update_from_database()
+
+    def get_endpoint_qr_data(self):
+        hiveconfig = HiveConfiguration.objects.filter(name="default").first()
         scfg = ServiceConfiguration2()
         scfg.gcp_project = self._mqtt_project_id
-        scfg.mqtt_host = self._mqtt_endpoint
-        # Currently not aren't supporting any direct web services
-        #scfg.webservice_root = "https://moxie.duranaki.com"
+        scfg.mqtt_host = hiveconfig.external_host if hiveconfig and hiveconfig.external_host else self._mqtt_endpoint
         scfg.override_port = self._port
         scfg.disable_verify = not self._cert_required
         # Serialize to bytes, then bytes to base64 string
@@ -257,7 +283,7 @@ class MoxieServer:
         # Now make QR debug object, just in JSON
         qr = { "debug": { "command": "om", "param": scfg_base64}}
         return json.dumps(qr)
-    
+
 def cleanup_instance():
     global _MOXIE_SERVICE_INSTANCE
     if _MOXIE_SERVICE_INSTANCE:

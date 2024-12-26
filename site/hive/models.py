@@ -37,9 +37,10 @@ class MoxieDevice(models.Model):
     email = models.EmailField(null=True, blank=True)
     permit = models.IntegerField(choices=[(tag.value, tag.name) for tag in DevicePermit],default=DevicePermit.UNKNOWN.value)
     schedule = models.ForeignKey(MoxieSchedule, on_delete=models.SET_NULL, null=True)
+    name = models.CharField(max_length=200, null=True, blank=True)
 
     def __str__(self):
-        return self.device_id
+        return self.name if self.name else self.device_id
 
 class MoxieLogs(models.Model):
     device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE)
@@ -47,3 +48,31 @@ class MoxieLogs(models.Model):
     uid = models.IntegerField()
     tag = models.CharField(max_length=80)
     message = models.TextField()
+
+class HiveConfiguration(models.Model):
+    name = models.CharField(max_length=200)
+    openai_api_key = models.TextField(null=True, blank=True, default='')
+    external_host = models.CharField(max_length=255, null=True, blank=True, default='')
+    allow_unverified_bots = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+class MentorBehavior(models.Model):
+    device = models.ForeignKey(MoxieDevice, on_delete=models.CASCADE)
+    # Fields for MBH
+    module_id = models.CharField(max_length=80, null=True, blank=True)
+    content_id = models.CharField(max_length=80, null=True, blank=True)
+    content_day = models.CharField(max_length=80, null=True, blank=True)
+    timestamp = models.BigIntegerField()
+    action = models.CharField(max_length=80, null=True, blank=True)
+    instance_id = models.BigIntegerField()
+    ended_reason = models.CharField(max_length=80, null=True, blank=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['device', 'timestamp'], name='device_timestamp_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.timestamp}-{self.device}/{self.module_id}-{self.action}'

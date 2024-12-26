@@ -28,17 +28,3 @@ class Command(BaseCommand):
         else:
             print("Default chat OPENMOXIE_CHAT already exists.")
 
-        # if env is set, attempt to create SU
-        username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
-        email = os.environ.get('DJANGO_SUPERUSER_EMAIL')
-        password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
-
-        if username and email and password:
-            User = get_user_model()
-            if not User.objects.filter(username=username).exists():
-                print('Creating superuser...')
-                User.objects.create_superuser(username, email, password)
-            else:
-                print('Superuser already exists.')
-        else:
-            print('Superuser credentials not provided.')
