@@ -1,10 +1,12 @@
 import json
 import logging
+import time
 from django.db import connections
 from django.db import transaction
 from ..models import MoxieDevice, MoxieSchedule, MentorBehavior
 from django.conf import settings
 from django.forms.models import model_to_dict
+from django.utils import timezone
 
 root_path = settings.BASE_DIR
 
@@ -47,6 +49,7 @@ class RobotData:
     def db_release(self, robot_id):
         if robot_id in self._robot_map:
             logger.info(f'Releasing device data for {robot_id}')
+            run_db_atomic(self.release_to_db, robot_id)
             del self._robot_map[robot_id]
 
     # Check if init after connection for this bot is needed, and remember it so we only init once
@@ -65,20 +68,28 @@ class RobotData:
     
     def init_from_db(self, robot_id):
         device, created = MoxieDevice.objects.get_or_create(device_id=robot_id)
+        device.last_connect = timezone.now()
+        logger.info(f'Device LAST CONNECTED {device.last_connect}')
         if created:
             logger.info(f'Created new model for this device {robot_id}')
             schedule = MoxieSchedule.objects.get(name='default')
             if schedule:
                 logger.info(f'Setting schedule to {schedule}')
                 device.schedule = schedule
-                device.save()
                 self._robot_map[robot_id] = { "schedule": schedule.schedule }
             else:
                 logger.warning('Failed to locate default schedule.')
         else:
             logger.info(f'Existing model for this device {robot_id}')
             self._robot_map[robot_id] = { "schedule": device.schedule.schedule if device.schedule else DEFAULT_SCHEDULE }
-        pass        
+        device.save()
+
+    def release_to_db(self, robot_id):
+        device = MoxieDevice.objects.get(device_id=robot_id)
+        if device:
+            device.last_disconnect = timezone.now()
+            logger.info(f'Device LAST DISCONNECTED {device.last_connect}')
+            device.save()
 
     def get_config(self, robot_id):
         robot_rec = self._robot_map.get(robot_id, {})

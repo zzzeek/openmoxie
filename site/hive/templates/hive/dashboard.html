@@ -8,9 +8,9 @@
   {% for device in recent_devices %}
   <tr><td>
     {% if device.device_id in live %}
-    <span class="badge text-bg-success">Online</span>
+    <span class="badge text-bg-success">Online</span> {{device.last_connect|timesince}}
     {% else %}
-    <span class="badge text-bg-secondary">Offline</span>
+    <span class="badge text-bg-secondary">Offline</span> {{device.last_disconnect|timesince}}
     {% endif %}
   </td><td><a href="{% url 'hive:moxie' device.pk %}">{{device}}</a></td><td>{{device.schedule}}</td></tr>
   {% endfor %}

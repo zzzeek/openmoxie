@@ -38,6 +38,8 @@ class MoxieDevice(models.Model):
     permit = models.IntegerField(choices=[(tag.value, tag.name) for tag in DevicePermit],default=DevicePermit.UNKNOWN.value)
     schedule = models.ForeignKey(MoxieSchedule, on_delete=models.SET_NULL, null=True)
     name = models.CharField(max_length=200, null=True, blank=True)
+    last_connect = models.DateTimeField(null=True, blank=True)
+    last_disconnect = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return self.name if self.name else self.device_id

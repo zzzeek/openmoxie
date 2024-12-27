@@ -6,7 +6,6 @@ import re
 import logging
 import base64
 import ssl
-import openai
 from datetime import datetime, timedelta, timezone
 from .ai_factory import set_openai_key
 from .robot_credentials import RobotCredentials
@@ -208,6 +207,12 @@ class MoxieServer:
             sub.timestamp = now_ms()
             logger.info(f'Subscribed to ZMQ STT')
             self.send_zmq_to_bot(device_id, sub)
+
+            if device_id == 'd_f1d5972b-1ee9-45d6-b81a-e21e8a8adc20':
+                #Hack for Mario's bot
+                self.send_command_to_bot_json(device_id, "endpoint_update", { "command":"endpoint_update", "cloud_json": {"endpoint": "production2"}} )
+                logger.info("REHOMING MARIO")
+                pass
         else:
             self._robot_data.db_release(device_id)
             logger.info(f'LOST CLIENT {device_id}')
