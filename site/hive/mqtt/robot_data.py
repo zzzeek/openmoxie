@@ -18,7 +18,7 @@ def run_db_atomic(functor, *args, **kwargs):
             return functor(*args, **kwargs)
 
 DEFAULT_ROBOT_CONFIG = { 
-  "paired_status": "paired",
+  "pairing_status": "paired",
   "audio_volume": "0.6",
   "screen_brightness": "1.0",
   "audio_wake_set": "off"

@@ -142,7 +142,7 @@ class RemoteChat:
         mod_map = {}
         for chat in SinglePromptChat.objects.all():
             new_modules[f'{chat.module_id}/{chat.content_id}'] = { 'xtor': SinglePromptDBChatSession, 'params': { 'pk': chat.pk } }
-            print(f'Registering {chat.module_id}')
+            print(f'Registering {chat.module_id}/{chat.content_id}')
             # Group content IDs under module IDs
             if chat.module_id in mod_map:
                 mod_map[chat.module_id].append(chat.content_id)
