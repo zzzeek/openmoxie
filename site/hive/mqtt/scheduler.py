@@ -76,8 +76,8 @@ def expand_schedule(schedule, device_id):
     if 'generate' in schedule:
         logger.info("Using generative schedule")
         # Update schedule data with automatic stuff
-        chat_count = schedule['generate'].get('chat_count', 6)
-        module_count = schedule['generate'].get('module_count', 2)
+        chat_count = schedule['generate'].get('chat_count', 2)
+        module_count = schedule['generate'].get('module_count', 6)
         chat_modules = schedule['generate'].get('chat_modules', [{'module_id': 'OPENMOXIE_CHAT', 'content_id': 'short'}])
         extra_modules = schedule['generate'].get('extra_modules', [])
         excluded_module_ids = schedule['generate'].get('excluded_module_ids', [])
