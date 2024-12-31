@@ -36,6 +36,7 @@ class MoxieServer:
     _topic_handlers: dict
     _zmq_handlers: dict
     _client_metrics: dict
+    _google_service_account: str
     def __init__(self, robot, rbdata, project_id, mqtt_host, mqtt_port, cert_required=True):
         self._robot = robot
         self._robot_data = rbdata
@@ -165,6 +166,17 @@ class MoxieServer:
                     logger.debug("Rx MBH request.")
                     req_id = csa.get('request_id')
                     self._worker_queue.submit(self.provide_mentor_behaviors, req_id, device_id)
+                elif csa.get("query") == "license":
+                    # ROBOT IS ASKING FOR ANY LICENSES IT CAN USE (e.g. google speech)
+                    req_id = csa.get('request_id')
+                    if self._google_service_account:
+                        logger.debug(f"Providing google speech credentials to {device_id}")
+                        self.send_command_to_bot_json(device_id, 'query_result', 
+                                                    { 'command': 'query_result', 'request_id': req_id, 'query': 'license',
+                                                    'license_values': [ 
+                                                        { 'id': 'google_speech', 'license': self._google_service_account}
+                                                        ]
+                                                        })
             elif 'mentor_behavior' in csa:
                 # MENTOR BEHAVIOR REPORT - Robot informing what user has done
                 self._worker_queue.submit(self.ingest_mentor_behavior, device_id, csa['mentor_behavior'])
@@ -187,7 +199,7 @@ class MoxieServer:
     # NOTE: Called from worker thread pool
     def provide_schedule(self, req_id, device_id):
         schedule = self._robot_data.get_schedule(device_id)
-        self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'schedule': schedule} )
+        self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'query': 'schedule', 'request_id': req_id, 'schedule': schedule} )
 
     # NOTE: Called from worker thread pool
     def ingest_mentor_behavior(self, device_id, mbh):
@@ -197,7 +209,7 @@ class MoxieServer:
     def provide_mentor_behaviors(self, req_id, device_id):
         mbh = self._robot_data.get_mbh(device_id)
         logger.info(f'Providing {len(mbh)} MBH records to {device_id}')
-        self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'request_id': req_id, 'mentor_behaviors': mbh} )
+        self.send_command_to_bot_json(device_id, 'query_result', { 'command': 'query_result', 'query': 'mentor_behaviors', 'request_id': req_id, 'mentor_behaviors': mbh} )
 
     # NOTE: Called from worker thread pool
     def on_device_connect(self, device_id, connected, ip_addr=None):
@@ -275,6 +287,7 @@ class MoxieServer:
     def update_from_database(self):
         hive_config = HiveConfiguration.objects.filter(name="default").first()
         set_openai_key(hive_config.openai_api_key if hive_config else None)
+        self._google_service_account = hive_config.google_api_key if hive_config else None
         self._remote_chat.update_from_database()
 
     def get_endpoint_qr_data(self):
