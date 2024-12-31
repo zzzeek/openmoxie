@@ -8,15 +8,10 @@ from django.conf import settings
 from django.forms.models import model_to_dict
 from django.utils import timezone
 from .scheduler import expand_schedule
-
-root_path = settings.BASE_DIR
+from .util import run_db_atomic
 
 logger = logging.getLogger(__name__)
 
-def run_db_atomic(functor, *args, **kwargs):
-    with connections['default'].cursor() as cursor:
-        with transaction.atomic():
-            return functor(*args, **kwargs)
 
 DEFAULT_ROBOT_CONFIG = { 
   "pairing_status": "paired",
@@ -29,7 +24,6 @@ DEFAULT_ROBOT_CONFIG = {
   }
 }
 
-DEFAULT_MBH = []
 DEFAULT_SCHEDULE = {}
 
 class RobotData:

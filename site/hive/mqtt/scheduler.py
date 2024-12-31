@@ -1,6 +1,8 @@
 import random
 import logging
 import numpy
+from .util import run_db_atomic
+from ..models import MoxieDevice,MentorBehavior
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +32,10 @@ _RECOMMENDABLE_MODULES = [
 {'module_id': 'AUDMED', 'category': 'REGULATION'},
 {'module_id': 'WHIMSY', 'category': 'FUN_TIDBIT'},
 ]
+
+# Number of content IDs inside these FTUE modules
+_TNT_CIDS = 9
+_SYSTEMSCHECK_CIDS = 4
 
 # Quick and dirty auto-scheduler; attempts to pick a random set of modules avoiding adjacencies
 # and preferring a broad range of categories
@@ -72,6 +78,20 @@ def distribute_elements(list2, list1):
         offset += gap + 1
     return result
 
+# A bit hokey, but these "training" (first time user experience) modules have content IDs in order but
+# the robot internal scheduler switches to a random cid once they exhaust, so they have to be removed
+# or TNT and SYSTEMSCHECK will still be in every session
+def ftue_remove(device_id):
+    purge_list = []
+    try:
+        if MentorBehavior.objects.filter(device__device_id=device_id, module_id="TNT", action="COMPLETED").count() >= _TNT_CIDS:
+            purge_list.append("TNT")
+        if MentorBehavior.objects.filter(device__device_id=device_id, module_id="SYSTEMSCHECK", action="COMPLETED").count() >= _SYSTEMSCHECK_CIDS:
+            purge_list.append("SYSTEMSCHECK")
+    except Exception as e:
+        logger.warning(f'Error checking FTUE completions {e}')
+    return purge_list
+
 def expand_schedule(schedule, device_id):
     if 'generate' in schedule:
         logger.info("Using generative schedule")
@@ -82,6 +102,11 @@ def expand_schedule(schedule, device_id):
         extra_modules = schedule['generate'].get('extra_modules', [])
         excluded_module_ids = schedule['generate'].get('excluded_module_ids', [])
         provided = schedule.get('provided_schedule', [])
+
+        # TNT and SYSTEMSCHECK have to be removed manually, as robot will keep playing something
+        ftue_remove_list = run_db_atomic(ftue_remove, device_id)
+        if ftue_remove_list:
+            provided = [item for item in provided if item.get('module_id') not in ftue_remove_list]
 
         # modules we can pick from, all recommmended unless excluded, plus any user defined extra modules
         auto_modules = [item for item in _RECOMMENDABLE_MODULES if item['module_id'] not in excluded_module_ids]
