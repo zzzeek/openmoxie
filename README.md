@@ -14,12 +14,11 @@ Currently this project contains the following:
 * A simple MQTT based STT provider using OpenAI Whisper
 * A simple MQTT based remote chat service using single prompt inferences from OpenAI
 
-## Dependencies
-
-* This project needs an external MQTT broker.  This is currently based on mosquitto MQTT service.
-* STT and chat inferences are serviced through OpenAI.  You must export a valid OPENAI_API_KEY into your environment before running
-
 # Running your own - DOCKER edition
+
+The Dockerfile and docker_compose.yml provide a direct means to install and run the complete
+system inside a container, including an MQTT broker with a self-signed certificate Moxie's should
+be able to join.
 
 1. Clone project
 2. Install docker
@@ -28,6 +27,11 @@ Currently this project contains the following:
 5. Depending on your PC firewall, expose port 8883
 
 # Running your own instance
+
+## Dependencies
+
+* This project needs an external MQTT broker.  This is currently based on mosquitto MQTT service.
+* STT and chat inferences are serviced through OpenAI.  You must export a valid OPENAI_API_KEY into your environment before running
 
 1. Clone project
 2. Install dependencies
