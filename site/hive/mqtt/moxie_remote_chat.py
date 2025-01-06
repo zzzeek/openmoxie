@@ -199,15 +199,18 @@ class RemoteChat:
     def make_markup(self, text):
         return automarkup_process(text, self._automarkup_rules)
 
+    def add_response_action(self, resp, action_name):
+        action = { 'action': action_name, 'output_type': 'GLOBAL_RESPONSE' }
+        resp['response_actions'][0] = action
+        resp['response_action'] = action
+
     def next_session_response(self, device_id, sess, rcr, resp):
         speech = rcr["speech"]
         text,overflow = sess.next_response(speech)
         resp['output']['text'] = text
         resp['output']['markup'] = self.make_markup(text)
         if overflow:
-            action = { 'action': 'exit_module', 'output_type': 'GLOBAL_RESPONSE' }
-            resp['response_actions'][0] = action
-            resp['response_action'] = action
+            self.add_response_action(resp, 'exit_module')
         self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
         
     def handle_request(self, device_id, rcr):
@@ -222,6 +225,9 @@ class RemoteChat:
             elif cmd == "prompt":
                 resp = self.make_response(rcr)
                 resp['output']['markup'] = sess.get_prompt()
+                # Special for prompt-only one-line modules, exit on prompt if max_len=0
+                if sess.overflow():
+                    self.add_response_action(resp, 'exit_module')
                 self._server.send_command_to_bot_json(device_id, 'remote_chat', resp)
             else:
                 self._worker_queue.submit(self.next_session_response, device_id, sess, rcr, self.make_response(rcr))
