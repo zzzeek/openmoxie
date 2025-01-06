@@ -5,8 +5,10 @@ services:
     build:
       context: ./
       dockerfile: ./mqtt.Dockerfile
-      platform: linux/amd64,linux/arm64
-    image: openmoxie/openmoxie-mqtt:v0.1
+      platforms:
+          - linux/amd64
+          - linux/arm64
+    image: openmoxie/openmoxie-mqtt:v0.2
     ports:
       - "8883:8883"
     volumes:
@@ -16,8 +18,10 @@ services:
     build:
       context: ./
       dockerfile: ./Dockerfile
-      platform: linux/amd64,linux/arm64
-    image: openmoxie/openmoxie-server:v0.1
+      platforms:
+          - linux/amd64
+          - linux/arm64
+    image: openmoxie/openmoxie-server:v0.2
     ports:
       - "8001:8000"
     volumes:
