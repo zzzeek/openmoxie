@@ -27,3 +27,9 @@
   .moximage {
     height: 1.5em;
   }
+
+  .moxversion {
+    padding-right: 5px;
+    float: right;
+    font-size: 0.75em;
+  }

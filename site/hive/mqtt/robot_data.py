@@ -21,11 +21,10 @@ DEFAULT_ROBOT_SETTINGS = {
       "target_all": "1",
       "gcp_upload_disable": "1",
       "local_stt": "on",
-      "max_enroll": "0",
+      "max_enroll": "2",
       "audio_wake": "1",
-      "audio_wake_set": "off",
       "cloud_schedule_reset_threshold": "5",
-      "debug_whiteboard": "1",
+      "debug_whiteboard": "0",
       "brain_entrances_available": "1"
     }
 }
@@ -35,6 +34,7 @@ DEFAULT_ROBOT_CONFIG = {
   "audio_volume": "0.6",
   "screen_brightness": "1.0",
   "audio_wake_set": "off",
+  "timezone_id": "America/Los_Angeles",
   "child_pii": {
       "nickname": "Pat",
       "input_speed": 0.0

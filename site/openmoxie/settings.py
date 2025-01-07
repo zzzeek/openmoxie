@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'openmoxie.version_context.moxie_version',
             ],
         },
     },
@@ -172,8 +173,11 @@ LOGGING = {
             'formatter': 'simple'
         },
         'file': {
-            'class': 'logging.FileHandler',
+            'class': 'logging.handlers.TimedRotatingFileHandler',
             'filename': DATA_STORE_DIR / 'debug.log',
+            'when': 'D',  # Daily rotation
+            'interval': 1,  # Rotate every 1 day
+            'backupCount': 30,  # Keep 30 days
             'formatter': 'verbose'
         },
     },

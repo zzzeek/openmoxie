@@ -21,6 +21,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# ROOT - Show setup if we have no config record, dashboard otherwise
 def root_view(request):
     cfg = HiveConfiguration.objects.filter(name='default')
     if cfg:
@@ -28,6 +29,7 @@ def root_view(request):
     else:
         return HttpResponseRedirect(reverse("hive:setup"))
 
+# SETUP - Edit systemn configuration record
 class SetupView(generic.TemplateView):
     template_name = "hive/setup.html"
 
@@ -40,6 +42,7 @@ class SetupView(generic.TemplateView):
             context['object'] = curr_cfg
         return context
 
+# SETUP-POST - Save system config changes
 @require_http_methods(["POST"])
 def hive_configure(request):
     cfg, created = HiveConfiguration.objects.get_or_create(name='default')
@@ -74,6 +77,7 @@ def hive_configure(request):
     get_instance().update_from_database()
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
+# DASHBOARD - View and overview of the system
 class DashboardView(generic.TemplateView):
     template_name = "hive/dashboard.html"
 
@@ -84,7 +88,8 @@ class DashboardView(generic.TemplateView):
         context['schedules'] = MoxieSchedule.objects.all()
         context['live'] = get_instance().robot_data().connected_list()
         return context
-    
+
+# INTERACT - Chat with a remote conversation
 class InteractionView(generic.DetailView):
     template_name = "hive/interact.html"
     model = SinglePromptChat
@@ -94,6 +99,7 @@ class InteractionView(generic.DetailView):
         context['token'] = uuid.uuid4().hex
         return context
 
+# INTERACT-POST - Handle user input during interact
 @require_http_methods(["POST"])
 @csrf_exempt
 def interact_update(request):
@@ -108,10 +114,12 @@ def interact_update(request):
         line,overflow = session.next_response(speech)
     return JsonResponse({'message': line, 'overflow': overflow})
 
+# RELOAD - Reload any records initialized from the database
 def reload_database(request):
     get_instance().update_from_database()
     return HttpResponseRedirect(reverse("hive:dashboard"))
 
+# ENDPOINT - Render QR code to migrate Moxie
 def endpoint_qr(request):
     img = qrcode.make(get_instance().get_endpoint_qr_data())
     buffer = BytesIO()
@@ -119,9 +127,11 @@ def endpoint_qr(request):
     buffer.seek(0)
     return HttpResponse(buffer, content_type='image/png')
 
+# WIFI EDIT - Edit wifi params to create QR Code
 class WifiQREditView(generic.TemplateView):
     template_name = "hive/wifi.html"
 
+# WIFI-POST - Render QR code for Wifi Creds
 @require_http_methods(["POST"])
 def wifi_qr(request):
     ssid = request.POST['ssid']
@@ -134,6 +144,7 @@ def wifi_qr(request):
     buffer.seek(0)
     return HttpResponse(buffer, content_type='image/png')
 
+# MOXIE - View Moxie Params and config
 class MoxieView(generic.DetailView):
     template_name = "hive/moxie.html"
     model = MoxieDevice
@@ -143,7 +154,8 @@ class MoxieView(generic.DetailView):
         context['active_config'] = get_instance().robot_data().get_config_for_device(self.object)
         context['schedules'] = MoxieSchedule.objects.all()
         return context
-    
+
+# MOXIE-POST - Save changes to a Moxie record
 @require_http_methods(["POST"])
 def moxie_edit(request, pk):
     try:
