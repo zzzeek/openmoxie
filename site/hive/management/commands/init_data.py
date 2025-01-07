@@ -33,6 +33,7 @@ class Command(BaseCommand):
         if created:
             def_chat.prompt="You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks."
             def_chat.opener="I love to chat.  What's on your mind?|Let's talk! What's a good topic?"
+            def_chat.name = "Open chat with Moxie, Long"
             def_chat.save()
             print("Creating default OPENMOXIE_CHAT")
         else:
@@ -44,6 +45,7 @@ class Command(BaseCommand):
             def_chat.prompt="You are a robot named Moxie who comes from the Global Robotics Laboratory. You are having a conversation with a person who is your friend. Chat about a topic that the person finds interesting and fun. Share short facts and opinions about the topic, one fact or opinion at a time. You are curious and love learning what the person thinks."
             def_chat.opener="I love to chat.  What's on your mind?|Let's talk! What's a good topic?"
             def_chat.max_volleys=20
+            def_chat.name = "Open chat with Moxie, Short"
             def_chat.save()
             print("Creating short OPENMOXIE_CHAT")
         else:

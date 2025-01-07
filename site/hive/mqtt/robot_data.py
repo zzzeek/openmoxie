@@ -49,7 +49,7 @@ DEFAULT_SCHEDULE = {}
 
 class RobotData:
     def __init__(self):
-        global DEFAULT_SCHEDULE, DEFAULT_ROBOT_CONFIG, DEFAULT_ROBOT_SETTINGS
+        global DEFAULT_SCHEDULE
         self._robot_map = {}
         db_default = MoxieSchedule.objects.filter(name="default").first()
         if db_default:
@@ -57,8 +57,6 @@ class RobotData:
             DEFAULT_SCHEDULE = db_default.schedule
         else:
             logger.error("Missing 'default' schedule from database.")
-        DEFAULT_ROBOT_CONFIG['settings'] = DEFAULT_ROBOT_SETTINGS
-
 
     def db_connect(self, robot_id):
         if robot_id in self._robot_map:
