@@ -1,13 +1,11 @@
 # OpenMoxie
-<div style="display: flex; align-items: flex-start;">
-  <img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
-  <p style="margin-left: 10px;">
+<p>
+<img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
 Welcome!  You may be here looking for a solution to run your Embodied Moxie Robot
 should their cloud infrastructure shut down.  If so, you are in the right place!  Some
 of you may already be concerned this is going to be complicated, and for those who
 are looking to just install and run something, we'll cover that first.
-  </p>
-</div>
+</p>
 
 ## What is OpenMoxie
 
