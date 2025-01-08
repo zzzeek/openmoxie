@@ -30,7 +30,7 @@ repository.  There are images available on Docker hub for common PC platforms.
 
 1. Download and install Docker to the target machine
 2. Create a directory somewhere, for instance an `OpenMoxie` folder in your home directory
-3. Download and save the latest [docker-compose.yml](https://raw.githubusercontent.com/jbeghtol/openmoxie/main/docker-compose.yml?raw=true&filename=docker-compose.yml) and save it inside that directory
+3. Download and save the latest [docker-compose.yml](./docker_compose.yml) and save it inside that directory
 4. Open a terminal window in that directory
 5. run `docker-compose pull` (this downloads the latest images)
 6. run `docker-compose up -d` (this starts OpenMoxie to run in the background)
