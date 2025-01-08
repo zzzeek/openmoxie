@@ -1,15 +1,17 @@
 # OpenMoxie
-<img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
+<span style="display: inline-block;">
+  <img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
 Welcome!  You may be here looking for a solution to run your Embodied Moxie Robot
 should their cloud infrastructure shut down.  If so, you are in the right place!  Some
 of you may already be concerned this is going to be complicated, and for those who
 are looking to just install and run something, we'll cover that first.
+</span>
 
 ## What is OpenMoxie
 
 A local network hub that Moxie can connect with and a local network service that provides the critical messaging
-and services to make Moxie function to the extend it can using the internal software of the robot.  Much of the
-Moxie content is supported like Daily Missions, Reading, Wild Workout, but some of the newer modules like Ocean
+and services to make Moxie function to the extent it can using the internal software of the robot.  Much of the
+Moxie content is supported like Daily Missions, Reading, and Wild Workout; but some of the newer modules like Ocean
 Explorer, Animal Faces, and Story Maker are missing.  On the plus side, you will be able to control the schedule,
 exclude modules your child dislikes, and write your own simple converations to have with Moxie.
 
@@ -30,7 +32,7 @@ repository.  There are images available on Docker hub for common PC platforms.
 
 1. Download and install Docker to the target machine
 2. Create a directory somewhere, for instance an `OpenMoxie` folder in your home directory
-3. Download and save the latest [docker-compose.yml](./docker_compose.yml) and save it inside that directory
+3. Download and save the latest [docker-compose.yml](./docker-compose.yml) and save it inside that directory
 4. Open a terminal window in that directory
 5. run `docker-compose pull` (this downloads the latest images)
 6. run `docker-compose up -d` (this starts OpenMoxie to run in the background)
