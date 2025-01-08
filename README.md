@@ -1,5 +1,5 @@
 # OpenMoxie
-![Header Graphic](./site/static/hive/openmoxie_logo.svg){: width="200" height="200"}
+<img src="./site/static/hive/openmoxie_logo.svg" width="200" height="200">
 Welcome!  You may be here looking for a solution to run your Embodied Moxie Robot
 should their cloud infrastructure shut down.  If so, you are in the right place!  Some
 of you may already be concerned this is going to be complicated, and for those who
