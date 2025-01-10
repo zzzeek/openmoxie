@@ -8,6 +8,7 @@ urlpatterns = [
     path("setup", views.SetupView.as_view(), name="setup"),
     path('hive_configure/', views.hive_configure, name='hive_configure'),
     path("dashboard", views.DashboardView.as_view(), name="dashboard"),
+    path('dashboard/<str:alert_message>/', views.DashboardView.as_view(), name='dashboard_alert'),
     path("interact/<int:pk>", views.InteractionView.as_view(), name="interact"),
     path("interact_update", views.interact_update, name="interact_update"),
     path("reload_database", views.reload_database, name="reload_database"),
@@ -16,4 +17,5 @@ urlpatterns = [
     path('wifi_qr/', views.wifi_qr, name='wifi_qr'),
     path("moxie/<int:pk>", views.MoxieView.as_view(), name="moxie"),
     path("moxie_edit/<int:pk>", views.moxie_edit, name="moxie_edit"),
+    path("moxie_wake/<int:pk>", views.moxie_wake, name="moxie_wake"),
 ]
