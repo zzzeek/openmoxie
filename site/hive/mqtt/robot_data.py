@@ -21,6 +21,8 @@ from .util import run_db_atomic, now_ms
 logger = logging.getLogger(__name__)
 
 # System default robot settings, which may be overridden by the database values
+# Notes:
+# - default_loglevel in {info, warning, error, fatal} - logging at warning reduces load and increase frame rate
 DEFAULT_ROBOT_SETTINGS = {
     "props": {
       "touch_wake": "1",
@@ -35,7 +37,9 @@ DEFAULT_ROBOT_SETTINGS = {
       "cloud_schedule_reset_threshold": "5",
       "debug_whiteboard": "0",
       "brain_entrances_available": "1",
-      "mqtt_files": "0"
+      "mqtt_files": "0",
+      "file_sync_wait": "0",
+      "default_loglevel": "warning"
     }
 }
 
