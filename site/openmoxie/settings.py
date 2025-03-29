@@ -98,8 +98,7 @@ DATABASES = {
 }
 
 MQTT_ENDPOINT = {
-    #'host': 'mqtt',
-    'host': '192.168.1.202',   # TODO: get this dynamically
+    'host': 'mqtt',
     'port': 8883,
     'project': 'openmoxie',
     'cert_required': False,
